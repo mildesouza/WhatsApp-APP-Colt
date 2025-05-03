@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Orçamentos</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <header>
+    <h1>WhatsApp Orçamentos</h1>
+  </header>
+  
+  <main>
+    <div id="loading">
+      <p>Extraindo número de telefone...</p>
+      <div class="loader"></div>
+    </div>
+    
+    <div id="erro" style="display: none;">
+      <p>Não foi possível extrair o número de telefone.</p>
+      <p id="erro-mensagem">Certifique-se de que um chat está aberto no WhatsApp Web.</p>
+      <button id="atualizar-botao" class="botao">Tentar novamente</button>
+    </div>
+    
+    <div id="resultado" style="display: none;">
+      <h2>Contato</h2>
+      <p id="telefone"></p>
+      
+      <div id="historico-orcamentos">
+        <h2>Histórico de Orçamentos</h2>
+        <p id="sem-orcamentos">Nenhum orçamento encontrado para este contato.</p>
+        <ul id="lista-orcamentos" style="display: none;"></ul>
+      </div>
+      
+      <div id="novo-orcamento">
+        <h2>Novo Orçamento</h2>
+        <div class="campo">
+          <label for="descricao-orcamento">Descrição:</label>
+          <input type="text" id="descricao-orcamento" placeholder="Ex: Serviço de instalação">
+        </div>
+        <div class="campo">
+          <label for="valor-orcamento">Valor (R$):</label>
+          <input type="text" id="valor-orcamento" placeholder="Ex: 150.00">
+        </div>
+        <button id="salvar-orcamento" class="botao">Salvar Orçamento</button>
+      </div>
+      
+      <div id="status" style="display: none;"></div>
+    </div>
+  </main>
+  
+  <footer>
+    <p>WhatsApp Orçamentos v1.0</p>
+  </footer>
+  
+  <script src="js/popup.js"></script>
+</body>
+</html> 
