@@ -5,6 +5,8 @@ export interface EventMap {
   'message:received': MessageEvent;
   'status:change': StatusEvent;
   'error:occurred': ErrorEvent;
+  'firebase:initialized': FirebaseEvent;
+  'firebase:error': FirebaseErrorEvent;
 }
 
 export interface MessageEvent {
@@ -22,6 +24,18 @@ export interface StatusEvent {
 }
 
 export interface ErrorEvent {
+  code: string;
+  message: string;
+  details?: unknown;
+  timestamp: number;
+}
+
+export interface FirebaseEvent {
+  status: 'initialized' | 'configured';
+  timestamp: number;
+}
+
+export interface FirebaseErrorEvent {
   code: string;
   message: string;
   details?: unknown;
