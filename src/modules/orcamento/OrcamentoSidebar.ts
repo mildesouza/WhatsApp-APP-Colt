@@ -15,11 +15,11 @@ const styles = `
     border-left: 1px solid #ccc;
     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
     transition: right 0.3s ease;
-    z-index: 1000;
+    z-index: 2147483646;
   }
 
   :host(.visible) {
-    right: 0;
+    right: 0 !important; /* Força right: 0 quando visível */
   }
 
   .orcamento-sidebar-container {
@@ -73,7 +73,7 @@ const styles = `
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    z-index: 999;
+    z-index: 2147483647; /* Máximo z-index possível */
   }
 
   #open-orcamento-button:hover {
@@ -143,7 +143,9 @@ export class OrcamentoSidebar extends HTMLElement {
     button.id = 'open-orcamento-button';
     button.textContent = 'Abrir Orçamento';
     button.addEventListener('click', () => this.toggle());
-    document.body.appendChild(button);
+    
+    // Inserir o botão como primeiro elemento do body
+    document.body.insertBefore(button, document.body.firstChild);
   }
 
   private initializeFirebase(): void {
@@ -154,18 +156,17 @@ export class OrcamentoSidebar extends HTMLElement {
   // Métodos públicos para controle de visibilidade
   public show(): void {
     this.isVisible = true;
-    if (this.shadow) {
-      this.classList.add('visible');
-    } else {
+    // Sempre adicionar a classe visible ao elemento host
+    this.classList.add('visible');
+    if (!USE_SHADOW_DOM) {
       this.style.right = '0';
     }
   }
 
   public hide(): void {
     this.isVisible = false;
-    if (this.shadow) {
-      this.classList.remove('visible');
-    } else {
+    this.classList.remove('visible');
+    if (!USE_SHADOW_DOM) {
       this.style.right = '-400px';
     }
   }
