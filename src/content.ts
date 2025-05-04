@@ -118,11 +118,43 @@ interface ExtracaoResponse {
 
 // Escuta mensagens do popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'extrairTelefone') {
-    const telefone = extrairTelefone();
-    sendResponse({ telefone });
+  if (request.action === "extrairTelefone") {
+    sendResponse({
+      telefone: (function () {
+        console.log("[WhatsApp Orçamentos] Iniciando extração de telefone...");
+        try {
+          const elementos = document.querySelectorAll("[data-id]");
+          for (const el of elementos) {
+            const dataId = el.getAttribute("data-id");
+            if (dataId && dataId.includes("@c.us")) {
+              const match = dataId.match(/([0-9]+)@c\.us/);
+              if (match && match[1]) {
+                console.log("[WhatsApp Orçamentos] ✅ Telefone extraído:", match[1]);
+                return match[1];
+              }
+            }
+          }
+
+          const href = window.location.href;
+          if (href.includes("/p/") || href.includes("web.whatsapp.com/send")) {
+            const phone = new URLSearchParams(window.location.search).get("phone");
+            if (phone) {
+              console.log("[WhatsApp Orçamentos] ✅ Telefone extraído da URL:", phone);
+              return phone;
+            }
+          }
+
+          console.error("[WhatsApp Orçamentos] ❌ Falha na extração de telefone");
+          return null;
+        } catch (err) {
+          console.error("[WhatsApp Orçamentos] ❌ Erro:", err);
+          return null;
+        }
+      })()
+    });
   }
-  return true; // Mantém a conexão aberta para resposta assíncrona
+
+  return true;
 });
 
 // Informa que o script foi carregado completamente
