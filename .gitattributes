@@ -1,0 +1,4 @@
+*.bundle.js filter=lfs diff=lfs merge=lfs -text
+*.bundle.js.map filter=lfs diff=lfs merge=lfs -text
+dist/** filter=lfs diff=lfs merge=lfs -text
+node_modules/** filter=lfs diff=lfs merge=lfs -text 
