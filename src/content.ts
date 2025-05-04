@@ -1,6 +1,9 @@
 // Informar que o script foi carregado
 console.log('[WhatsApp Orçamentos] Script de conteúdo carregado');
 
+// Importar o módulo do painel lateral
+import { injectOrcamentoSidebar } from './modules/orcamento/OrcamentoSidebar';
+
 // Declarar tipo para a extensão do window
 declare global {
   interface Window {
@@ -12,6 +15,9 @@ declare global {
 if (typeof window.whatsappOrcamentosLoaded === 'undefined') {
   window.whatsappOrcamentosLoaded = true;
   console.log('[WhatsApp Orçamentos] Primeira inicialização');
+  
+  // Injetar o painel lateral
+  injectOrcamentoSidebar();
 } else {
   console.log('[WhatsApp Orçamentos] Script já inicializado anteriormente');
 }
