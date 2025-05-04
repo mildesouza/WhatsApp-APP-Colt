@@ -26,11 +26,16 @@
     "https://web.whatsapp.com/*"
   ],
   "background": {
+<<<<<<< HEAD
     "service_worker": "background.bundle.js",
+=======
+    "service_worker": "js/background.js",
+>>>>>>> a2fd9b1037cc71dbabdab3c639dd9d3c60764736
     "type": "module"
   },
   "content_scripts": [
     {
+<<<<<<< HEAD
       "matches": [
         "https://web.whatsapp.com/*"
       ],
@@ -41,3 +46,11 @@
     }
   ]
 }
+=======
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["js/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+} 
+>>>>>>> a2fd9b1037cc71dbabdab3c639dd9d3c60764736
