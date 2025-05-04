@@ -1,22 +1,47 @@
 // Background script
 console.log('Background script iniciado');
 
-// Manter controle de qual aba está com WhatsApp aberto
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.includes('web.whatsapp.com')) {
-    console.log('WhatsApp Web detectado na tab:', tabId);
-    
-    // Inserir o script na página 
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
+// Função para injetar o content script em uma aba
+async function injectContentScript(tabId: number) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
       files: ['content.bundle.js']
-    })
-    .then(() => {
-      console.log('Content script injetado na tab do WhatsApp Web');
-    })
-    .catch(err => {
-      console.error('Erro ao injetar content script:', err);
     });
+    
+    await chrome.scripting.insertCSS({
+      target: { tabId },
+      files: ['css/popup.css']
+    });
+    
+    console.log('Content script e CSS injetados na tab:', tabId);
+  } catch (err) {
+    console.error('Erro ao injetar scripts:', err);
+  }
+}
+
+// Handler para instalação e atualização da extensão
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('Extensão instalada/atualizada:', details.reason);
+  
+  // Procurar por todas as abas do WhatsApp Web
+  const tabs = await chrome.tabs.query({
+    url: "https://web.whatsapp.com/*"
+  });
+  
+  // Injetar o content script em todas as abas encontradas
+  for (const tab of tabs) {
+    if (tab.id) {
+      await injectContentScript(tab.id);
+    }
+  }
+});
+
+// Listener para novas abas/atualizações
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url?.includes('web.whatsapp.com')) {
+    console.log('WhatsApp Web detectado na tab:', tabId);
+    injectContentScript(tabId);
   }
 });
 
