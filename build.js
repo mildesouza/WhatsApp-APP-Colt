@@ -19,11 +19,20 @@ async function buildExtension() {
     console.log('\n🧹 Limpando diretório dist...')
     await fs.remove(distDir)
     await fs.ensureDir(distDir)
+    await fs.ensureDir(resolve(distDir, 'js'))
     
-    // Build do projeto
-    console.log('\n🛠️ Iniciando build Vite...')
+    // Build do content script
+    console.log('\n🛠️ Iniciando build do content script...')
     await build({
-      configFile: resolve(rootDir, 'vite.config.js')
+      configFile: resolve(rootDir, 'vite.content.config.js'),
+      mode: 'production'
+    })
+    
+    // Build do popup e outros assets
+    console.log('\n🛠️ Iniciando build do popup...')
+    await build({
+      configFile: resolve(rootDir, 'vite.config.js'),
+      mode: 'production'
     })
 
     // Move o popup.html se estiver no local errado
@@ -33,6 +42,14 @@ async function buildExtension() {
       console.log('\n📦 Movendo popup.html para o local correto...')
       await fs.move(popupSrcPath, popupDestPath, { overwrite: true })
       await fs.remove(resolve(distDir, 'src'))
+    }
+
+    // Move o content.js se necessário
+    const contentSrcPath = resolve(distDir, 'js', 'content.js')
+    const contentDestPath = resolve(distDir, 'js', 'content.js')
+    if (await fs.pathExists(contentSrcPath) && contentSrcPath !== contentDestPath) {
+      console.log('\n📦 Movendo content.js para o local correto...')
+      await fs.move(contentSrcPath, contentDestPath, { overwrite: true })
     }
 
     // Cria diretório de imagens se não existir
@@ -45,11 +62,6 @@ async function buildExtension() {
     
     console.log('   De:', manifestSrc)
     console.log('   Para:', manifestDest)
-    
-    const manifestExists = await fs.pathExists(manifestSrc)
-    if (!manifestExists) {
-      throw new Error(`manifest.json não encontrado em ${manifestSrc}`)
-    }
     
     await fs.copy(manifestSrc, manifestDest)
     console.log('✅ manifest.json copiado com sucesso')
@@ -77,35 +89,20 @@ async function buildExtension() {
     console.log('\n🔍 Verificando arquivos gerados...')
     const files = await fs.readdir(distDir, { recursive: true })
     console.log('📁 Arquivos em dist:', files)
-    
+
     // Verifica se os arquivos essenciais existem
-    const requiredFiles = ['manifest.json', 'popup.html']
-    const requiredPatterns = [
-      /js\/content\.js$/,  // Arquivo content.js exato
-      /js\/popup\.js$/     // Arquivo popup.js exato
+    const requiredFiles = [
+      'manifest.json',
+      'popup.html',
+      'js/content.js',
+      'js/popup.js'
     ]
     
-    const missingFiles = []
-    
-    // Verifica arquivos com nome exato
     for (const file of requiredFiles) {
       const filePath = resolve(distDir, file)
       if (!await fs.pathExists(filePath)) {
-        missingFiles.push(file)
+        throw new Error(`Arquivo essencial faltando: ${file}`)
       }
-    }
-    
-    // Verifica arquivos que seguem os padrões
-    const allFiles = files.map(file => file.replace(/\\/g, '/'))
-    for (const pattern of requiredPatterns) {
-      const found = allFiles.some(file => pattern.test(file))
-      if (!found) {
-        missingFiles.push(pattern.toString())
-      }
-    }
-    
-    if (missingFiles.length > 0) {
-      throw new Error(`Arquivos essenciais faltando: ${missingFiles.join(', ')}`)
     }
 
     console.log('\n✨ Build concluído com sucesso!')
