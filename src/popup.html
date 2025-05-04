@@ -25,28 +25,43 @@
     
     <div id="resultado" style="display: none;">
       <h2>Contato</h2>
-      <p id="telefone"></p>
+      <div class="campo">
+        <label for="telefone">Telefone:</label>
+        <input type="text" id="telefone" readonly>
+      </div>
       
-      <div id="historico-orcamentos">
-        <h2>Histórico de Orçamentos</h2>
-        <p id="sem-orcamentos">Nenhum orçamento encontrado para este contato.</p>
-        <ul id="lista-orcamentos" style="display: none;"></ul>
+      <div class="campo">
+        <label for="nome-cliente">Nome do Cliente:</label>
+        <input type="text" id="nome-cliente" placeholder="Digite o nome do cliente">
       </div>
       
       <div id="novo-orcamento">
         <h2>Novo Orçamento</h2>
-        <div class="campo">
-          <label for="descricao-orcamento">Descrição:</label>
-          <input type="text" id="descricao-orcamento" placeholder="Ex: Serviço de instalação">
+        <div id="itens-orcamento">
+          <h3>Itens do Orçamento</h3>
+          <div class="item-orcamento">
+            <div class="campo">
+              <label for="descricao-item">Descrição:</label>
+              <input type="text" class="descricao-item" placeholder="Ex: Serviço de instalação">
+            </div>
+            <div class="campo">
+              <label for="valor-item">Valor (R$):</label>
+              <input type="number" step="0.01" class="valor-item" placeholder="150.00">
+            </div>
+          </div>
         </div>
-        <div class="campo">
-          <label for="valor-orcamento">Valor (R$):</label>
-          <input type="text" id="valor-orcamento" placeholder="Ex: 150.00">
+        
+        <button id="adicionar-item" class="botao secundario">+ Adicionar Item</button>
+        
+        <div class="campo total">
+          <label>Total:</label>
+          <span id="valor-total">R$ 0,00</span>
         </div>
-        <button id="salvar-orcamento" class="botao">Salvar Orçamento</button>
+        
+        <button id="salvar-orcamento" class="botao">Salvar no Firestore</button>
       </div>
       
-      <div id="status" style="display: none;"></div>
+      <div id="status" class="mensagem" style="display: none;"></div>
     </div>
   </main>
   
@@ -54,6 +69,6 @@
     <p>WhatsApp Orçamentos v1.0</p>
   </footer>
   
-  <script src="js/popup.js"></script>
+  <script src="./popup.ts" type="module"></script>
 </body>
 </html> 

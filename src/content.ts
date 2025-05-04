@@ -110,34 +110,13 @@ interface ExtracaoResponse {
   error?: string;
 }
 
-// Listener para receber mensagens do popup ou background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse: (response: ExtracaoResponse) => void) => {
-  console.log('[WhatsApp Orçamentos] Mensagem recebida:', request);
-  
+// Escuta mensagens do popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extrairTelefone') {
-    console.log('[WhatsApp Orçamentos] Iniciando processo de extração...');
-    
-    try {
-      // Extrai o telefone
-      const telefone = extrairTelefoneCompleto();
-      
-      if (telefone) {
-        console.log('[WhatsApp Orçamentos] Telefone extraído com sucesso:', telefone);
-        sendResponse({ success: true, telefone: telefone });
-      } else {
-        console.error('[WhatsApp Orçamentos] Falha ao extrair telefone');
-        sendResponse({ success: false, error: 'Telefone não encontrado' });
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('[WhatsApp Orçamentos] Erro ao extrair telefone:', errorMessage);
-      sendResponse({ success: false, error: errorMessage });
-    }
-    
-    return true; // Mantém a conexão aberta para resposta assíncrona
+    const telefone = extrairTelefone();
+    sendResponse({ telefone });
   }
-  
-  return false;
+  return true; // Mantém a conexão aberta para resposta assíncrona
 });
 
 // Informa que o script foi carregado completamente

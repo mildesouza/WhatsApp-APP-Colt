@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "WhatsApp Orçamentos",
-  "version": "1.0",
-  "description": "Extrair o telefone do contato ativo e gerenciar orçamentos",
+  "version": "1.0.0",
+  "description": "Extensão para gerenciamento de orçamentos no WhatsApp Web",
   "icons": {
     "16": "images/icon16.png",
+    "32": "images/icon32.png",
     "48": "images/icon48.png",
     "128": "images/icon128.png"
   },
@@ -12,28 +13,23 @@
     "default_popup": "popup.html",
     "default_icon": {
       "16": "images/icon16.png",
+      "32": "images/icon32.png",
       "48": "images/icon48.png",
       "128": "images/icon128.png"
     }
   },
   "permissions": [
     "activeTab",
-    "scripting",
     "storage",
-    "tabs"
+    "scripting"
   ],
   "host_permissions": [
     "https://web.whatsapp.com/*"
   ],
-  "background": {
-    "service_worker": "background.bundle.js",
-    "type": "module"
-  },
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.bundle.js"],
-      "run_at": "document_idle"
+      "js": ["js/content.js"]
     }
   ]
 } 
