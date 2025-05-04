@@ -13,13 +13,25 @@ export default defineConfig({
     sourcemap: true,
     minify: 'terser',
     target: 'es2018',
+    terserOptions: {
+      format: {
+        comments: false
+      },
+      compress: {
+        drop_console: false
+      }
+    },
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/popup.html'),
         content: resolve(__dirname, 'src/content.ts')
       },
       output: {
-        format: 'es',
+        format: 'iife',
+        extend: true,
+        globals: {
+          chrome: 'chrome'
+        },
         entryFileNames: (chunkInfo) => {
           if (['popup', 'content'].includes(chunkInfo.name)) {
             return 'js/[name].js'
@@ -46,6 +58,6 @@ export default defineConfig({
           return `assets/[name]-[hash][extname]`
         }
       }
-    },
+    }
   }
 }) 

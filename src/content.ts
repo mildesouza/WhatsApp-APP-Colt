@@ -1,6 +1,9 @@
 // Informar que o script foi carregado
 console.log('[WhatsApp Orçamentos] Script de conteúdo carregado');
 
+// Importar o módulo principal
+import './content/index';
+
 // Importar o módulo do painel lateral
 import { injectOrcamentoSidebar } from './modules/orcamento/OrcamentoSidebar';
 

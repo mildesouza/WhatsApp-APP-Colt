@@ -30,7 +30,6 @@
     {
       "matches": ["https://web.whatsapp.com/*"],
       "js": ["js/content.js"],
-      "type": "module",
       "run_at": "document_idle"
     }
   ]
