@@ -19,6 +19,7 @@ export default defineConfig({
         content: resolve(__dirname, 'src/content.ts')
       },
       output: {
+        format: 'es',
         entryFileNames: (chunkInfo) => {
           if (['popup', 'content'].includes(chunkInfo.name)) {
             return 'js/[name].js'
