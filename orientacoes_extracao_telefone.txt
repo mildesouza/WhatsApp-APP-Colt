@@ -1,0 +1,37 @@
+📌 INSTRUÇÕES PERMANENTES SOBRE A EXTRAÇÃO DO TELEFONE – PROJETO WHATSAPP ORÇAMENTOS
+
+⚠️ IMPORTANTE:
+A extração do telefone do contato ativo no WhatsApp Web é um ponto crítico do sistema.
+Esse telefone é utilizado como ID único do cliente em toda a estrutura da extensão.
+
+🧩 A função atual de extração está validada em produção e NÃO DEVE SER MODIFICADA SEM JUSTIFICATIVA TÉCNICA CLARA.
+
+✔️ REGRAS QUE DEVEM SER MANTIDAS:
+- A função deve continuar registrada em `chrome.runtime.onMessage.addListener`
+- A extração deve acontecer dentro de uma função anônima autoexecutável (IIFE)
+- A chave de ação usada na mensagem deve permanecer como `"extrairTelefone"`
+- O retorno deve ser exatamente `{ telefone: string | null }`
+- A extração deve funcionar mesmo com variações de layout do WhatsApp Web
+
+🛑 NÃO PERMITIDO:
+- Substituir a estrutura do IIFE por funções externas
+- Mover a lógica para outro arquivo sem atualizar os testes
+- Usar arrow functions ou tipagens extras no bloco de extração
+- Alterar o nome da chave `"extrairTelefone"`
+- Integrar a função com outras responsabilidades (injeção, renderização, etc.)
+
+🔁 Caso precise refatorar:
+A função pode ser modularizada ou adaptada, porem apenas se extremamente nscessário e com minha autorização explicita, e, DESDE QUE:
+- O comportamento de extração continue exatamente igual
+- A assinatura e retorno da mensagem sejam mantidos
+- O log continue visível no DevTools para validação (console.log + console.error)
+
+✅ Validação após qualquer alteração:
+- Verifique no DevTools do WhatsApp Web se a extração ocorre
+- Confira se o log aparece no console:
+  [WhatsApp Orçamentos] ✅ Telefone extraído: <número>
+
+Essa proteção garante que os módulos de orçamento, histórico, tags e CRM funcionem corretamente.
+
+Autor: Arquiteto de Software GPT
+Data: 2025-05-04

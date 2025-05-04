@@ -15,7 +15,18 @@ export default defineConfig({
         extend: true,
         globals: {
           chrome: 'chrome'
-        }
+        },
+        inlineDynamicImports: true,
+        manualChunks: undefined,
+        compact: true,
+        minifyInternalExports: true
+      }
+    },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true
       }
     }
   }
