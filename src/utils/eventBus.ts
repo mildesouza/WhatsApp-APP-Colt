@@ -1,64 +1,87 @@
-import { EventMessage } from '../types';
 import { logger } from './logger';
+import { EventMessage, EventType } from '../types';
 
-type EventCallback = (data: any) => void;
+type EventHandler<T = unknown> = (data: T) => void;
 
 class EventBus {
   private static instance: EventBus;
-  private listeners: Map<string, EventCallback[]>;
+  private handlers: Map<EventType, EventHandler[]>;
 
   private constructor() {
-    this.listeners = new Map();
+    this.handlers = new Map();
   }
 
-  public static getInstance(): EventBus {
+  static getInstance(): EventBus {
     if (!EventBus.instance) {
       EventBus.instance = new EventBus();
     }
     return EventBus.instance;
   }
 
-  public subscribe(eventType: string, callback: EventCallback): void {
+  on<T = unknown>(event: EventType, handler: EventHandler<T>): void {
     try {
-      const callbacks = this.listeners.get(eventType) || [];
-      callbacks.push(callback);
-      this.listeners.set(eventType, callbacks);
-      logger.debug(`Subscribed to event: ${eventType}`);
+      if (!this.handlers.has(event)) {
+        this.handlers.set(event, []);
+      }
+      
+      this.handlers.get(event)?.push(handler as EventHandler);
+      logger.debug(`Registrado handler para evento: ${event}`);
     } catch (error) {
-      logger.error('Error subscribing to event', { eventType, error });
+      logger.error(`Erro ao registrar handler para evento: ${event}`, { error });
     }
   }
 
-  public unsubscribe(eventType: string, callback: EventCallback): void {
+  off<T = unknown>(event: EventType, handler: EventHandler<T>): void {
     try {
-      const callbacks = this.listeners.get(eventType) || [];
-      const index = callbacks.indexOf(callback);
-      if (index > -1) {
-        callbacks.splice(index, 1);
-        this.listeners.set(eventType, callbacks);
-        logger.debug(`Unsubscribed from event: ${eventType}`);
+      const handlers = this.handlers.get(event);
+      if (handlers) {
+        const index = handlers.indexOf(handler as EventHandler);
+        if (index > -1) {
+          handlers.splice(index, 1);
+          logger.debug(`Removido handler para evento: ${event}`);
+        }
       }
     } catch (error) {
-      logger.error('Error unsubscribing from event', { eventType, error });
+      logger.error(`Erro ao remover handler para evento: ${event}`, { error });
     }
   }
 
-  public emit(message: EventMessage): void {
+  emit<T = unknown>(event: EventType, data: T): void {
     try {
-      const callbacks = this.listeners.get(message.type) || [];
-      callbacks.forEach(callback => {
-        try {
-          callback(message.data);
-        } catch (error) {
-          logger.error('Error in event callback', { 
-            eventType: message.type, 
-            error 
-          });
-        }
-      });
-      logger.debug(`Event emitted: ${message.type}`, { data: message.data });
+      const handlers = this.handlers.get(event);
+      if (handlers) {
+        const message: EventMessage<T> = {
+          type: event,
+          data,
+          timestamp: Date.now()
+        };
+
+        handlers.forEach(handler => {
+          try {
+            handler(message.data);
+          } catch (error) {
+            logger.error(`Erro ao executar handler para evento: ${event}`, { error });
+          }
+        });
+
+        logger.debug(`Evento emitido: ${event}`, { data });
+      }
     } catch (error) {
-      logger.error('Error emitting event', { message, error });
+      logger.error(`Erro ao emitir evento: ${event}`, { error });
+    }
+  }
+
+  clearHandlers(event?: EventType): void {
+    try {
+      if (event) {
+        this.handlers.delete(event);
+        logger.debug(`Handlers limpos para evento: ${event}`);
+      } else {
+        this.handlers.clear();
+        logger.debug('Todos os handlers foram limpos');
+      }
+    } catch (error) {
+      logger.error(`Erro ao limpar handlers${event ? ` para evento: ${event}` : ''}`, { error });
     }
   }
 }

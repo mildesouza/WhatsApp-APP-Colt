@@ -15,6 +15,9 @@ export interface ExtractedContact {
 export type EventType = 
   | 'CONTACT_SELECTED'
   | 'MESSAGE_SENT'
+  | 'BUDGET_CREATED'
+  | 'BUDGET_UPDATED'
+  | 'BUDGET_DELETED'
   | 'CONNECTION_STATUS'
   | 'ERROR';
 
@@ -41,8 +44,36 @@ export interface Budget {
 }
 
 export interface BudgetItem {
+  id: string;
   description: string;
   quantity: number;
   unitPrice: number;
   total: number;
+}
+
+export interface ContactExtractorModule {
+  extractPhoneNumber: () => Promise<string | null>;
+  extractContactName: () => Promise<string | null>;
+  extractLastSeen: () => Promise<Date | null>;
+}
+
+export interface BudgetModule {
+  createBudget: (contact: ExtractedContact) => Promise<Budget>;
+  updateBudget: (budget: Budget) => Promise<Budget>;
+  deleteBudget: (id: string) => Promise<boolean>;
+  getBudgets: () => Promise<Budget[]>;
+  getBudgetById: (id: string) => Promise<Budget | null>;
+}
+
+export interface StorageModule {
+  get: <T>(key: string) => Promise<T | null>;
+  set: <T>(key: string, value: T) => Promise<void>;
+  remove: (key: string) => Promise<void>;
+  clear: () => Promise<void>;
+}
+
+export interface WhatsAppModule {
+  sendMessage: (phoneNumber: string, message: string) => Promise<boolean>;
+  isConnected: () => Promise<boolean>;
+  onConnectionChange: (callback: (isConnected: boolean) => void) => void;
 } 

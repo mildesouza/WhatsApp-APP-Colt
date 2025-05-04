@@ -1,78 +1,82 @@
-// Módulo de logging centralizado
-enum LogLevel {
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
-  DEBUG = 'DEBUG'
-}
+// Utilitário de logging centralizado
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-interface LogMessage {
+interface LogEntry {
   level: LogLevel;
   message: string;
-  timestamp: string;
-  context?: any;
+  timestamp: Date;
+  context?: Record<string, unknown>;
 }
 
 class Logger {
   private static instance: Logger;
-  private isDebugEnabled: boolean;
+  private readonly isDevelopment: boolean;
 
   private constructor() {
-    this.isDebugEnabled = process.env.NODE_ENV === 'development';
+    this.isDevelopment = process.env.NODE_ENV !== 'production';
   }
 
-  public static getInstance(): Logger {
+  static getInstance(): Logger {
     if (!Logger.instance) {
       Logger.instance = new Logger();
     }
     return Logger.instance;
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: any): LogMessage {
-    return {
+  private formatMessage(entry: LogEntry): string {
+    const timestamp = entry.timestamp.toISOString();
+    const context = entry.context ? ` | ${JSON.stringify(entry.context)}` : '';
+    return `[${timestamp}] [${entry.level.toUpperCase()}] ${entry.message}${context}`;
+  }
+
+  private log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+    const entry: LogEntry = {
       level,
       message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       context
     };
-  }
 
-  private log(logMessage: LogMessage): void {
-    const formattedMessage = `[${logMessage.timestamp}] [${logMessage.level}] ${logMessage.message}`;
-    
-    switch (logMessage.level) {
-      case LogLevel.ERROR:
-        console.error(formattedMessage, logMessage.context || '');
-        break;
-      case LogLevel.WARN:
-        console.warn(formattedMessage, logMessage.context || '');
-        break;
-      case LogLevel.DEBUG:
-        if (this.isDebugEnabled) {
-          console.debug(formattedMessage, logMessage.context || '');
-        }
-        break;
-      default:
-        console.log(formattedMessage, logMessage.context || '');
+    const formattedMessage = this.formatMessage(entry);
+
+    // Em desenvolvimento, mostra todos os logs
+    if (this.isDevelopment) {
+      switch (level) {
+        case 'debug':
+          console.debug(formattedMessage);
+          break;
+        case 'info':
+          console.info(formattedMessage);
+          break;
+        case 'warn':
+          console.warn(formattedMessage);
+          break;
+        case 'error':
+          console.error(formattedMessage);
+          break;
+      }
+    } else {
+      // Em produção, mostra apenas warn e error
+      if (level === 'warn' || level === 'error') {
+        console[level](formattedMessage);
+      }
     }
   }
 
-  public info(message: string, context?: any): void {
-    this.log(this.formatMessage(LogLevel.INFO, message, context));
+  debug(message: string, context?: Record<string, unknown>): void {
+    this.log('debug', message, context);
   }
 
-  public warn(message: string, context?: any): void {
-    this.log(this.formatMessage(LogLevel.WARN, message, context));
+  info(message: string, context?: Record<string, unknown>): void {
+    this.log('info', message, context);
   }
 
-  public error(message: string, context?: any): void {
-    this.log(this.formatMessage(LogLevel.ERROR, message, context));
+  warn(message: string, context?: Record<string, unknown>): void {
+    this.log('warn', message, context);
   }
 
-  public debug(message: string, context?: any): void {
-    if (this.isDebugEnabled) {
-      this.log(this.formatMessage(LogLevel.DEBUG, message, context));
-    }
+  error(message: string, context?: Record<string, unknown>): void {
+    this.log('error', message, context);
   }
 }
 
