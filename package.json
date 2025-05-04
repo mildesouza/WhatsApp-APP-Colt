@@ -1,0 +1,23 @@
+{
+  "type": "module",
+  "dependencies": {
+    "firebase": "^11.6.1",
+    "whatsapp-web.js": "^1.27.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "@types/node": "^20.17.32",
+    "esbuild": "^0.19.12",
+    "rimraf": "^5.0.10",
+    "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mildesouza/WhatsApp-Orcamentos.git"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && node build.js",
+    "watch": "npm run build -- --watch"
+  }
+}
