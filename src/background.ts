@@ -9,7 +9,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Inserir o script na página 
     chrome.scripting.executeScript({
       target: { tabId: tabId },
-      files: ['js/content.js']
+      files: ['content.bundle.js']
     })
     .then(() => {
       console.log('Content script injetado na tab do WhatsApp Web');

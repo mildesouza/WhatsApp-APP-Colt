@@ -1,6 +1,13 @@
 // Informar que o script foi carregado
 console.log('[WhatsApp Orçamentos] Script de conteúdo carregado');
 
+// Declarar tipo para a extensão do window
+declare global {
+  interface Window {
+    whatsappOrcamentosLoaded: boolean;
+  }
+}
+
 // Flag para evitar múltiplas injeções
 if (typeof window.whatsappOrcamentosLoaded === 'undefined') {
   window.whatsappOrcamentosLoaded = true;
@@ -20,7 +27,7 @@ export function extraiContato( /* ... */ ) {
 }
 
 // Função otimizada para extrair o telefone do contato ativo usando Método 2
-function extrairTelefone() {
+function extrairTelefone(): string | null {
   console.log('[WhatsApp Orçamentos] Iniciando extração de telefone...');
   
   // Método eficaz: extrair do atributo data-id
@@ -61,13 +68,13 @@ function extrairTelefone() {
     console.error('[WhatsApp Orçamentos] Não foi possível extrair o telefone via data-id');
     return null;
   } catch (error) {
-    console.error('[WhatsApp Orçamentos] Erro ao extrair telefone:', error.message);
+    console.error('[WhatsApp Orçamentos] Erro ao extrair telefone:', error);
     return null;
   }
 }
 
 // Função para verificar se existe um chat aberto
-function extrairTelefoneCompleto() {
+function extrairTelefoneCompleto(): string | null {
   console.log('[WhatsApp Orçamentos] Iniciando extração completa...');
   
   try {
@@ -91,13 +98,20 @@ function extrairTelefoneCompleto() {
     
     return phone;
   } catch (error) {
-    console.error('[WhatsApp Orçamentos] Erro na extração completa:', error.message);
+    console.error('[WhatsApp Orçamentos] Erro na extração completa:', error);
     return null;
   }
 }
 
+// Interface para a resposta da mensagem
+interface ExtracaoResponse {
+  success: boolean;
+  telefone?: string;
+  error?: string;
+}
+
 // Listener para receber mensagens do popup ou background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse: (response: ExtracaoResponse) => void) => {
   console.log('[WhatsApp Orçamentos] Mensagem recebida:', request);
   
   if (request.action === 'extrairTelefone') {
@@ -115,8 +129,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: 'Telefone não encontrado' });
       }
     } catch (error) {
-      console.error('[WhatsApp Orçamentos] Erro ao extrair telefone:', error.message);
-      sendResponse({ success: false, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('[WhatsApp Orçamentos] Erro ao extrair telefone:', errorMessage);
+      sendResponse({ success: false, error: errorMessage });
     }
     
     return true; // Mantém a conexão aberta para resposta assíncrona
