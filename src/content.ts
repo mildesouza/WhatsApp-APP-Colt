@@ -5,24 +5,17 @@ declare global {
     whatsappOrcamentosLoaded: boolean | undefined;
     currentWhatsAppPhone: string | null;
   }
+  // Permitir armazenar referência do listener de auto-save
+  interface HTMLFormElement {
+    __autoSaveListener?: EventListener;
+  }
 }
 
-// Interface para dados do painel
-interface PainelData {
-  dadosPessoais?: {
-    nome?: string;
-    email?: string;
-    cpf?: string;
-    dataNascimento?: string;
-    endereco?: string;
-  };
-  observacoes?: string;
-  itens: Array<{
-    descricao: string;
-    valor: number;
-  }>;
-  ultimaAtualizacao: number;
-}
+// Importar tipo PainelData centralizado
+import type { PainelData } from './types/Orcamento';
+
+// Importar funções de storage centralizado
+import { saveData, loadData, clearData, getKey } from './utils/storage';
 
 // content.ts - Versão consolidada em IIFE
 (() => {
@@ -36,47 +29,6 @@ interface PainelData {
       SIDEBAR_TARGET: '#app > div > div > div.two > div:first-child'
     },
     LOG_PREFIX: '[WhatsApp Orçamentos]',
-    STORAGE_PREFIX: 'whatsapp_orcamentos_'
-  };
-
-  // Funções de persistência
-  const storage = {
-    getKey: (phone: string) => `${CONFIG.STORAGE_PREFIX}${phone}`,
-    
-    save: (phone: string, data: Partial<PainelData>) => {
-      try {
-        const key = storage.getKey(phone);
-        const existingData = storage.load(phone) || {
-          nomeCliente: '',
-          itens: [],
-          ultimaAtualizacao: Date.now()
-        };
-        
-        const newData = {
-          ...existingData,
-          ...data,
-          ultimaAtualizacao: Date.now()
-        };
-        
-        localStorage.setItem(key, JSON.stringify(newData));
-        log.success(`Dados salvos para ${phone}`);
-        return true;
-      } catch (err) {
-        log.error(`Erro ao salvar dados: ${err}`);
-        return false;
-      }
-    },
-    
-    load: (phone: string): PainelData | null => {
-      try {
-        const key = storage.getKey(phone);
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : null;
-      } catch (err) {
-        log.error(`Erro ao carregar dados: ${err}`);
-    return null;
-  }
-}
   };
 
   // 2. Utilitários de log
@@ -288,7 +240,6 @@ interface PainelData {
                   </button>
                 </div>
                 <div class="actions">
-                  <button type="submit" class="action-btn">Salvar Orçamento</button>
                   <button type="button" class="action-btn secondary">Histórico</button>
                 </div>
               </form>
@@ -504,94 +455,185 @@ interface PainelData {
             });
 
             if (isValid) {
-              saveFormData();
-            }
-          });
-
-          // Função para salvar dados
-          const saveFormData = () => {
-            const phone = extrairTelefone();
-            if (!phone) return;
-
-            const itens = Array.from(listaItens.children).map((row) => {
-              const inputs = row.querySelectorAll('input');
-              return {
-                descricao: inputs[0].value,
-                valor: parseFloat(inputs[1].value)
-              };
-            });
-
-            const dadosPessoais = {
-              nome: (form.querySelector('#nome') as HTMLInputElement).value,
-              email: emailInput.value,
-              cpf: cpfInput.value,
-              dataNascimento: (form.querySelector('#dataNascimento') as HTMLInputElement).value,
-              endereco: (form.querySelector('#endereco') as HTMLTextAreaElement).value
-            };
-
-            storage.save(phone, {
-              dadosPessoais,
-              observacoes: (form.querySelector('#observacoes') as HTMLTextAreaElement).value,
-              itens
-            });
-          };
-
-          // Função para carregar dados
-          const loadFormData = (phone: string) => {
-            const data = storage.load(phone);
-            if (!data) return;
-
-            if (data.dadosPessoais) {
-              (form.querySelector('#nome') as HTMLInputElement).value = data.dadosPessoais.nome || '';
-              emailInput.value = data.dadosPessoais.email || '';
-              cpfInput.value = data.dadosPessoais.cpf || '';
-              (form.querySelector('#dataNascimento') as HTMLInputElement).value = data.dadosPessoais.dataNascimento || '';
-              (form.querySelector('#endereco') as HTMLTextAreaElement).value = data.dadosPessoais.endereco || '';
-            }
-
-            (form.querySelector('#observacoes') as HTMLTextAreaElement).value = data.observacoes || '';
-            
-            listaItens.innerHTML = '';
-            if (data.itens && data.itens.length > 0) {
-              data.itens.forEach(item => {
-                const row = createItemRow();
-                const inputs = row.querySelectorAll('input');
-                inputs[0].value = item.descricao;
-                inputs[1].value = item.valor.toString();
-                listaItens.appendChild(row);
-              });
-            } else {
-              listaItens.appendChild(createItemRow());
-            }
-          };
-
-          // Atualizar telefone quando mudar de conversa
-          const updatePhone = () => {
-            const phone = extrairTelefone();
-            const phoneElement = painel.querySelector('.phone');
-            const statusElement = painel.querySelector('.status');
-            
-            if (phoneElement && statusElement) {
+              const phone = extrairTelefone();
               if (phone) {
-                phoneElement.textContent = `📱 ${phone}`;
-                statusElement.textContent = 'Contato ativo';
-                loadFormData(phone);
+                saveFormData(form, phone);
               } else {
-                phoneElement.textContent = 'Nenhum contato selecionado';
-                statusElement.textContent = 'Selecione um contato para começar';
+                log.info('Nenhum telefone ativo para salvar');
               }
             }
+          });
+
+          // Função para salvar dados de forma segura
+          const saveFormData = (form: HTMLFormElement, phone: string) => {
+            if (!phone) {
+              log.info('Nenhum telefone ativo para salvar dados');
+              return;
+            }
+
+            try {
+              const dadosPessoais = {
+                nome: (form.querySelector('#nome') as HTMLInputElement)?.value || '',
+                email: (form.querySelector('#email') as HTMLInputElement)?.value || '',
+                cpf: (form.querySelector('#cpf') as HTMLInputElement)?.value || '',
+                dataNascimento: (form.querySelector('#dataNascimento') as HTMLInputElement)?.value || '',
+                endereco: (form.querySelector('#endereco') as HTMLTextAreaElement)?.value || ''
+              };
+
+              const observacoes = (form.querySelector('#observacoes') as HTMLTextAreaElement)?.value || '';
+              
+              // Construir array de itens com tipagem explícita
+              const itens: Array<{ descricao: string; valor: number }> = Array.from(
+                form.querySelectorAll<HTMLDivElement>('.item-row')
+              ).map((row: HTMLDivElement) => {
+                const inputs = row.querySelectorAll('input');
+                return {
+                  descricao: inputs[0]?.value || '',
+                  valor: parseFloat(inputs[1]?.value || '0') || 0
+                };
+              });
+
+              saveData(phone, {
+                dadosPessoais,
+                observacoes,
+                itens
+              });
+              
+              log.info(`Dados salvos para ${phone}`);
+            } catch (error) {
+              log.error(`Erro ao salvar dados: ${error}`);
+            }
           };
 
-          // Observar mudanças na conversa
-          const chatObserver = new MutationObserver(updatePhone);
-          chatObserver.observe(document.body, {
-            childList: true,
-            subtree: true
-          });
+          // Função para atualizar display do telefone de forma segura
+          const updatePhoneDisplay = (phone: string | null, container: HTMLElement) => {
+            try {
+              log.info(`Atualizando display para telefone: ${phone}`);
+              
+              const phoneElement = container.querySelector('.phone');
+              const statusElement = container.querySelector('.status');
+              
+              if (phoneElement && statusElement) {
+                if (phone) {
+                  phoneElement.textContent = `📱 ${phone}`;
+                  statusElement.textContent = 'Contato ativo';
+                  loadFormData(phone);
+                } else {
+                  phoneElement.textContent = 'Nenhum contato selecionado';
+                  statusElement.textContent = 'Selecione um contato para começar';
+                }
+              }
+            } catch (error) {
+              log.error(`Erro ao atualizar display: ${error}`);
+            }
+          };
+
+          // Função para carregar dados do formulário de forma segura
+          const loadFormData = (phone: string) => {
+            try {
+              const data = loadData(phone);
+              const form = document.querySelector('.orcamento-form') as HTMLFormElement;
+              if (!form) return;
+
+              // Limpar formulário antes de carregar novos dados
+              form.reset();
+              const listaItens = form.querySelector('#lista-itens');
+              if (listaItens) {
+                listaItens.innerHTML = '';
+                listaItens.appendChild(createItemRow());
+              }
+
+              if (!data) return;
+
+              if (data.dadosPessoais) {
+                // Preencher dados pessoais
+                for (const [field, value] of Object.entries(data.dadosPessoais)) {
+                  const input = form.querySelector(`#${field}`) as HTMLInputElement | HTMLTextAreaElement;
+                  if (input && typeof value === 'string') {
+                    input.value = value;
+                  }
+                }
+              }
+
+              const obsTextarea = form.querySelector('#observacoes') as HTMLTextAreaElement;
+              if (obsTextarea && data.observacoes) {
+                obsTextarea.value = data.observacoes;
+              }
+
+              if (listaItens && data.itens && data.itens.length > 0) {
+                listaItens.innerHTML = '';
+                // Carregar itens do orçamento
+                for (const item of data.itens) {
+                  const row = createItemRow();
+                  const inputs = row.querySelectorAll('input');
+                  if (inputs[0]) inputs[0].value = item.descricao;
+                  if (inputs[1]) inputs[1].value = item.valor.toString();
+                  listaItens.appendChild(row);
+                }
+              }
+
+              // Configurar auto-save com listener único e limpeza de duplicatas
+              setupFormAutoSave(form, phone);
+            } catch (error) {
+              log.error(`Erro ao carregar dados: ${error}`);
+            }
+          };
+
+          // Configurar auto-save com listener único e limpeza de duplicatas
+          const setupFormAutoSave = (form: HTMLFormElement, phone: string) => {
+            try {
+              // Remover listener anterior, se existir
+              if (form.__autoSaveListener) {
+                form.removeEventListener('input', form.__autoSaveListener);
+              }
+
+              let saveTimeout: NodeJS.Timeout;
+              const listener = (e: Event) => {
+                const target = e.target as HTMLElement;
+                if (target.matches('input, textarea')) {
+                  clearTimeout(saveTimeout);
+                  saveTimeout = setTimeout(() => saveFormData(form, phone), 500);
+                }
+              };
+
+              form.__autoSaveListener = listener;
+              form.addEventListener('input', listener, { passive: true });
+
+              log.info('Auto-save configurado com sucesso');
+            } catch (error) {
+              log.error(`Erro ao configurar auto-save: ${error}`);
+            }
+          };
+
+          // Configurar observer de forma segura
+          const chatElement = document.querySelector(CONFIG.SELECTORS.CHAT);
+          if (chatElement) {
+            try {
+              const observer = new MutationObserver(() => {
+                const newPhone = extrairTelefone();
+                if (newPhone !== window.currentWhatsAppPhone) {
+                  log.info(`Telefone alterado: ${newPhone}`);
+                  window.currentWhatsAppPhone = newPhone;
+                  updatePhoneDisplay(newPhone, painel);
+                }
+              });
+
+              observer.observe(chatElement, {
+                childList: true,
+                subtree: false
+              });
+
+              log.info('Observer configurado com sucesso');
+            } catch (error) {
+              log.error(`Erro ao configurar observer: ${error}`);
+            }
+          }
 
           // Adicionar ao body
           document.body.appendChild(painel);
+          // Exibir telefone do cliente assim que o painel for injetado
+          const initialPhone = extrairTelefone();
+          updatePhoneDisplay(initialPhone, painel);
 
           // Adicionar botão de abrir
           const openButton = document.createElement('button');
@@ -621,9 +663,9 @@ interface PainelData {
             if (isMinimized) {
               painel.classList.remove('minimized');
               openButton.style.display = 'none';
-              // Carregar dados ao abrir o painel
+              // Atualizar display e carregar dados ao abrir o painel
               const phone = extrairTelefone();
-              if (phone) loadFormData(phone);
+              updatePhoneDisplay(phone, painel);
             } else {
               painel.classList.add('minimized');
               openButton.style.display = 'block';
@@ -680,5 +722,9 @@ interface PainelData {
 });
 
   // 8. Iniciar a extensão
-  initialize();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
 })(); 
