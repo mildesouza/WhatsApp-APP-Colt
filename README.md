@@ -1,97 +1,81 @@
-<<<<<<< HEAD
 # WhatsApp Orçamentos
 
-Este projeto é um plugin para WhatsApp que permite gerar e enviar orçamentos diretamente pelo WhatsApp Web.
-
-## Instalação
-
-1. Clone este repositório:
-   ```bash
-   git clone https://github.com/mildesouza/WhatsApp-Orcamentos.git
-   ```
-2. Acesse a pasta do projeto:
-   ```bash
-   cd WhatsApp-Orcamentos
-   ```
-3. Instale as dependências:
-   ```bash
-   npm install
-   ```
-
-## Configuração de ambiente
-
-Copie um dos arquivos de exemplo e preencha as variáveis:
-
-- `.env-dev`
-- `.env-homolog`
-- `.env-prod`
-
-Exemplo de conteúdo:
-```env
-API_KEY=your_api_key
-OTHER_VAR=other_value
-```
-
-## Scripts úteis
-
-- `npm run build` — gera os arquivos em `dist/`
-- `npm run watch` — executa em modo watch e reconstrói ao alterar arquivos
-
-## Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE). 
-=======
-# WhatsApp APP Colt
-
 ## Descrição
-Aplicação web para integração com WhatsApp.
+Extensão para Chrome que permite extrair telefones de contatos e gerenciar orçamentos diretamente no WhatsApp Web.
 
 ## Estrutura do Projeto
 ```
 src/
-├── components/     # Componentes reutilizáveis
-├── pages/         # Páginas da aplicação
-├── services/      # Serviços e integrações
+├── modules/       # Módulos da aplicação
+├── types/         # Definições de tipos TypeScript
 ├── utils/         # Funções utilitárias
-└── styles/        # Estilos globais
+├── css/          # Estilos da extensão
+└── images/       # Ícones e imagens
 ```
 
 ## Requisitos
 - Node.js (versão 18 ou superior)
 - NPM ou Yarn
+- Google Chrome (versão 88 ou superior)
 
-## Instalação
-1. Clone o repositório
+## Instalação para Desenvolvimento
+
+1. Clone o repositório:
 ```bash
 git clone https://github.com/mildesouza/WhatsApp-APP-Colt.git
+cd WhatsApp-APP-Colt
 ```
 
-2. Instale as dependências
+2. Instale as dependências:
 ```bash
 npm install
-# ou
-yarn install
 ```
+
+3. Configure o ambiente:
+Copie um dos arquivos de exemplo e preencha as variáveis:
+- `.env-dev` para desenvolvimento
+- `.env-homolog` para homologação
+- `.env-prod` para produção
+
+## Scripts Disponíveis
+
+- `npm run build` - Gera os arquivos em `dist/`
+- `npm run watch` - Executa em modo watch e reconstrói ao alterar arquivos
+- `npm run dev` - Inicia o ambiente de desenvolvimento
+
+## Instalação da Extensão no Chrome
+
+1. Abra o Chrome e navegue para `chrome://extensions/`
+2. Ative o "Developer mode" no canto superior direito
+3. Clique em "Load unpacked" e selecione a pasta `dist/` do projeto
+
+## Funcionalidades
+
+- Extração automática de telefones de contatos
+- Interface para geração de orçamentos
+- Integração direta com WhatsApp Web
+- Armazenamento local de dados
 
 ## Desenvolvimento
-Para iniciar o ambiente de desenvolvimento:
-```bash
-npm run dev
-# ou
-yarn dev
-```
 
-## Build
-Para gerar a build de produção:
-```bash
-npm run build
-# ou
-yarn build
-```
+### Branches
+- `main` - Branch principal
+- `feature/*` - Novas funcionalidades
+- `fix/*` - Correções de bugs
+
+### Commits
+Seguimos o padrão Conventional Commits:
+- `feat:` - Novas funcionalidades
+- `fix:` - Correções
+- `docs:` - Documentação
+- `chore:` - Manutenção
 
 ## Contribuição
-Por favor, leia o guia de contribuição antes de submeter pull requests.
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
 
 ## Licença
-Este projeto está sob a licença MIT. 
->>>>>>> a2fd9b1037cc71dbabdab3c639dd9d3c60764736
+Este projeto está sob a licença MIT.
