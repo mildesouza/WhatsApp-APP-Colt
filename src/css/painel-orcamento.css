@@ -1,0 +1,110 @@
+.whatsapp-orcamento-panel {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f0f2f5;
+  border-radius: 8px;
+}
+
+.form-section h3 {
+  margin: 0 0 16px 0;
+  color: #128C7E;
+  font-size: 16px;
+}
+
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 4px;
+  color: #41525d;
+  font-size: 14px;
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: #128C7E;
+}
+
+#itens-container {
+  margin-bottom: 12px;
+}
+
+.item-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.item-row input {
+  flex: 1;
+}
+
+.item-row button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+#adicionar-item {
+  background: #128C7E;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+button[type="submit"] {
+  background: #128C7E;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 24px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 16px;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+#telefone-cliente {
+  padding: 8px;
+  background: #e8f5e9;
+  border-radius: 4px;
+  color: #128C7E;
+  font-weight: 500;
+}
+
+.cliente-info {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+} 

@@ -22,6 +22,61 @@ export class PainelOrcamento {
     document.body.appendChild(this.container);
     document.body.appendChild(this.toggleButton);
     this.inicializar();
+    
+    // Adicionar estilos globais
+    const style = document.createElement('style');
+    style.textContent = `
+        .form-section {
+            transition: all 0.3s ease-out;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .form-section.minimizado {
+            margin-bottom: 8px;
+        }
+        
+        .form-section.minimizado .section-content {
+            max-height: 0 !important;
+            padding: 0 !important;
+            border-top: none;
+            opacity: 0;
+        }
+        
+        .section-content {
+            transition: all 0.3s ease-out;
+            opacity: 1;
+        }
+        
+        .toggle-indicator {
+            opacity: 0.7;
+        }
+        
+        .section-header:hover .toggle-indicator {
+            opacity: 1;
+        }
+        
+        #whatsapp-orcamento-panel .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            scrollbar-width: thin;
+            scrollbar-color: ${CONFIG.STYLES.COLORS.PRIMARY} #f0f0f0;
+        }
+        
+        #whatsapp-orcamento-panel .scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #whatsapp-orcamento-panel .scroll-container::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+        
+        #whatsapp-orcamento-panel .scroll-container::-webkit-scrollbar-thumb {
+            background-color: ${CONFIG.STYLES.COLORS.PRIMARY};
+            border-radius: 3px;
+        }
+    `;
+    document.head.appendChild(style);
   }
 
   private inicializar(): void {
@@ -35,7 +90,7 @@ export class PainelOrcamento {
     const initializeObserver = setInterval(() => {
       const conversationContainer = document.querySelector(CONFIG.SELECTORS.CONVERSATION_PANEL);
       
-      if (conversationContainer) {
+      if (conversationContainer && this.observer) {
         clearInterval(initializeObserver);
         this.observer.observe(conversationContainer, {
           childList: true,
@@ -67,7 +122,7 @@ export class PainelOrcamento {
       const phoneElement = document.querySelector(CONFIG.SELECTORS.PHONE_DATA);
       
       if (phoneElement) {
-        const newPhone = extrairTelefone(phoneElement.getAttribute('data-id') || '');
+        const newPhone = extrairTelefone();
         
         if (newPhone && newPhone !== this.currentPhone) {
           this.currentPhone = newPhone;
@@ -179,31 +234,31 @@ export class PainelOrcamento {
     const painel = document.createElement('div');
     painel.id = 'whatsapp-orcamento-panel';
     painel.style.cssText = `
-      width: ${CONFIG.STYLES.SIZES.PANEL_WIDTH};
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      right: 0;
-      background-color: #ffffff;
-      box-shadow: -2px 0 6px rgba(0,0,0,0.1);
-      z-index: 1000;
-      transition: transform 0.3s ease-in-out;
-      transform: translateX(100%);
-      display: flex;
-      flex-direction: column;
-      font-family: ${CONFIG.STYLES.FONTS.FAMILY};
+        width: ${CONFIG.STYLES.SIZES.PANEL_WIDTH};
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        right: 0;
+        background-color: #ffffff;
+        box-shadow: -2px 0 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+        transition: transform 0.3s ease-in-out;
+        transform: translateX(100%);
+        display: flex;
+        flex-direction: column;
+        font-family: ${CONFIG.STYLES.FONTS.FAMILY};
     `;
 
     // Adicionar cabeçalho
     const header = document.createElement('div');
     header.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background-color: #fff;
-      border-bottom: 1px solid ${CONFIG.STYLES.COLORS.BACKGROUND};
-      flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background-color: #fff;
+        border-bottom: 1px solid ${CONFIG.STYLES.COLORS.BACKGROUND};
+        flex-shrink: 0;
     `;
 
     const titulo = document.createElement('h2');
@@ -214,12 +269,12 @@ export class PainelOrcamento {
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '&times;';
     closeButton.style.cssText = `
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      padding: 0 5px;
-      color: ${CONFIG.STYLES.COLORS.TEXT};
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0 5px;
+        color: ${CONFIG.STYLES.COLORS.TEXT};
     `;
     closeButton.onclick = () => this.toggle();
 
@@ -227,15 +282,10 @@ export class PainelOrcamento {
     header.appendChild(closeButton);
     painel.appendChild(header);
 
-    // Criar container para o conteúdo scrollável
+    // Criar container para o conteúdo scrollável com classe específica
     const scrollContainer = document.createElement('div');
-    scrollContainer.style.cssText = `
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      height: calc(100vh - 70px); /* Altura total menos altura do header */
-    `;
-
+    scrollContainer.className = 'scroll-container';
+    
     // Adicionar conteúdo do painel dentro do container scrollável
     this.adicionarConteudo(scrollContainer);
     painel.appendChild(scrollContainer);
@@ -280,218 +330,220 @@ export class PainelOrcamento {
   private criarBlocoColapsavel(titulo: string, conteudo: HTMLElement, id: string): HTMLDivElement {
     const bloco = document.createElement('div');
     bloco.className = 'form-section';
+    bloco.id = `section-${id}`;
     bloco.style.cssText = `
-      margin-bottom: 24px;
-      padding: 16px;
-      background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-      border-radius: 8px;
-      transition: all 0.3s ease;
+        margin-bottom: 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        background: white;
     `;
 
     const header = document.createElement('div');
+    header.className = 'section-header';
     header.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      margin-bottom: 16px;
-      user-select: none;
-      padding: 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s;
+        border-radius: 4px;
     `;
-    header.onmouseover = () => {
-      header.style.backgroundColor = 'rgba(0,0,0,0.05)';
-    };
-    header.onmouseout = () => {
-      header.style.backgroundColor = 'transparent';
-    };
 
     const tituloElement = document.createElement('h3');
     tituloElement.textContent = titulo;
     tituloElement.style.cssText = `
-      color: ${CONFIG.STYLES.COLORS.PRIMARY};
-      margin: 0;
-      font-size: 16px;
-      flex: 1;
-      font-weight: 600;
+        margin: 0;
+        font-size: 15px;
+        font-weight: 500;
+        color: ${CONFIG.STYLES.COLORS.PRIMARY};
     `;
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.type = 'button';
-    toggleBtn.setAttribute('aria-label', `Expandir/recolher seção ${titulo}`);
+    const toggleBtn = document.createElement('span');
+    toggleBtn.className = 'toggle-indicator';
     toggleBtn.style.cssText = `
-      background: none;
-      border: none;
-      color: ${CONFIG.STYLES.COLORS.PRIMARY};
-      cursor: pointer;
-      font-size: 18px;
-      padding: 4px 8px;
-      transition: all 0.3s ease;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
+        font-size: 12px;
+        color: ${CONFIG.STYLES.COLORS.PRIMARY};
+        transition: transform 0.3s ease;
+        display: inline-block;
+        pointer-events: none;
+        width: 12px;
+        text-align: center;
     `;
-    toggleBtn.onmouseover = () => {
-      toggleBtn.style.backgroundColor = 'rgba(0,0,0,0.05)';
-    };
-    toggleBtn.onmouseout = () => {
-      toggleBtn.style.backgroundColor = 'transparent';
-    };
+
+    const conteudoContainer = document.createElement('div');
+    conteudoContainer.className = 'section-content';
+    conteudoContainer.style.cssText = `
+        padding: 0;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+        transition: all 0.3s ease-out;
+        overflow: hidden;
+    `;
 
     const conteudoWrapper = document.createElement('div');
-    conteudoWrapper.className = 'section-content';
     conteudoWrapper.style.cssText = `
-      overflow: hidden;
-      transition: all 0.3s ease;
-      opacity: 1;
+        padding: 12px;
     `;
     conteudoWrapper.appendChild(conteudo);
+    conteudoContainer.appendChild(conteudoWrapper);
 
     header.appendChild(tituloElement);
     header.appendChild(toggleBtn);
     bloco.appendChild(header);
-    bloco.appendChild(conteudoWrapper);
+    bloco.appendChild(conteudoContainer);
 
     // Recuperar estado salvo
-    const sectionsState = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
-    const isExpanded = sectionsState[id] !== false; // Por padrão, expandido
+    const estadosSalvos = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
+    const expandido = estadosSalvos[id] !== false;
 
-    this.atualizarEstadoBloco(bloco, toggleBtn, conteudoWrapper, isExpanded, id);
+    const atualizarEstado = (expandir: boolean) => {
+        if (expandir) {
+            bloco.classList.remove('minimizado');
+            conteudoContainer.style.maxHeight = `${conteudoWrapper.offsetHeight}px`;
+            toggleBtn.textContent = '▼';
+            toggleBtn.style.transform = 'rotate(0deg)';
+            header.style.borderRadius = '4px 4px 0 0';
+            setTimeout(() => {
+                if (!bloco.classList.contains('minimizado')) {
+                    conteudoContainer.style.padding = '12px';
+                }
+            }, 150);
+        } else {
+            bloco.classList.add('minimizado');
+            conteudoContainer.style.maxHeight = '0';
+            conteudoContainer.style.padding = '0';
+            toggleBtn.textContent = '▲';
+            toggleBtn.style.transform = 'rotate(180deg)';
+            header.style.borderRadius = '4px';
+        }
+        
+        // Salvar estado
+        const estados = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
+        estados[id] = expandir;
+        localStorage.setItem(this.STORAGE_KEY_SECTIONS, JSON.stringify(estados));
+    };
 
-    header.onclick = () => {
-      const novoEstado = toggleBtn.getAttribute('aria-expanded') !== 'true';
-      this.atualizarEstadoBloco(bloco, toggleBtn, conteudoWrapper, novoEstado, id);
-      
-      // Salvar estado
-      const estados = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
-      estados[id] = novoEstado;
-      localStorage.setItem(this.STORAGE_KEY_SECTIONS, JSON.stringify(estados));
+    // Configurar estado inicial
+    atualizarEstado(expandido);
+
+    // Adicionar evento de clique no cabeçalho inteiro
+    header.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        atualizarEstado(bloco.classList.contains('minimizado'));
+    };
+
+    // Adicionar hover effect
+    header.onmouseenter = () => {
+        header.style.backgroundColor = '#f5f5f5';
+    };
+    header.onmouseleave = () => {
+        header.style.backgroundColor = 'white';
     };
 
     return bloco;
-  }
-
-  private atualizarEstadoBloco(
-    bloco: HTMLDivElement, 
-    toggleBtn: HTMLButtonElement, 
-    conteudoWrapper: HTMLDivElement,
-    expandido: boolean,
-    id: string
-  ): void {
-    toggleBtn.textContent = expandido ? '▼' : '▲';
-    toggleBtn.setAttribute('aria-expanded', expandido.toString());
-    toggleBtn.title = expandido ? 'Recolher seção' : 'Expandir seção';
-    
-    if (expandido) {
-      conteudoWrapper.style.height = `${conteudoWrapper.scrollHeight}px`;
-      conteudoWrapper.style.opacity = '1';
-      conteudoWrapper.style.marginTop = '16px';
-      bloco.classList.remove('minimizado');
-      bloco.style.backgroundColor = CONFIG.STYLES.COLORS.BACKGROUND;
-    } else {
-      conteudoWrapper.style.height = '0';
-      conteudoWrapper.style.opacity = '0';
-      conteudoWrapper.style.marginTop = '0';
-      bloco.classList.add('minimizado');
-      bloco.style.backgroundColor = 'transparent';
-    }
   }
 
   private adicionarConteudo(container: HTMLDivElement): void {
     // Seção de informações do cliente
     const clienteInfo = document.createElement('div');
     clienteInfo.innerHTML = `
-      <div id="telefone-cliente" style="
-        padding: 8px;
-        background: white;
-        border-radius: 4px;
-        color: ${CONFIG.STYLES.COLORS.PRIMARY};
-        font-weight: 500;
-      "></div>
+        <div id="telefone-cliente" style="
+            padding: 12px;
+            background: white;
+            border-radius: 4px;
+            color: ${CONFIG.STYLES.COLORS.PRIMARY};
+            font-weight: 500;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        "></div>
     `;
-    const blocoCliente = this.criarBlocoColapsavel('Informações do Cliente', clienteInfo, 'cliente-info');
-    container.appendChild(blocoCliente);
+    container.appendChild(clienteInfo);
 
-    // Formulário de orçamento
+    // Formulário principal
     const form = document.createElement('form');
     form.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     `;
 
-    // Criar seções do formulário
+    // Seção Dados Pessoais
     const dadosPessoaisDiv = document.createElement('div');
     dadosPessoaisDiv.innerHTML = this.criarHTMLDadosPessoais();
     const blocoDadosPessoais = this.criarBlocoColapsavel('Dados Pessoais', dadosPessoaisDiv, 'dados-pessoais');
     form.appendChild(blocoDadosPessoais);
 
+    // Seção Endereço
     const enderecoDiv = document.createElement('div');
     enderecoDiv.innerHTML = this.criarHTMLEndereco();
     const blocoEndereco = this.criarBlocoColapsavel('Endereço de Entrega', enderecoDiv, 'endereco');
     form.appendChild(blocoEndereco);
 
-    const itensDiv = document.createElement('div');
-    itensDiv.innerHTML = `
-      <div id="itens-container"></div>
-      <button type="button" id="adicionar-item" style="
-        background: ${CONFIG.STYLES.COLORS.PRIMARY};
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 8px 16px;
-        cursor: pointer;
-        width: 100%;
-        font-size: 14px;
-        margin-top: 8px;
-        transition: background-color 0.2s;
-      ">+ Adicionar Item</button>
+    // Seção Orçamento
+    const orcamentoDiv = document.createElement('div');
+    orcamentoDiv.innerHTML = `
+        <div id="itens-container"></div>
+        <button type="button" id="adicionar-item" style="
+            background: ${CONFIG.STYLES.COLORS.PRIMARY};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            margin-top: 8px;
+        ">+ Adicionar Item</button>
     `;
-    const blocoItens = this.criarBlocoColapsavel('Itens do Orçamento', itensDiv, 'itens');
-    form.appendChild(blocoItens);
+    const blocoOrcamento = this.criarBlocoColapsavel('Itens do Orçamento', orcamentoDiv, 'orcamento');
+    form.appendChild(blocoOrcamento);
 
+    // Seção Observações
     const observacoesDiv = document.createElement('div');
     observacoesDiv.innerHTML = `
-      <textarea id="observacoes" name="observacoes" rows="4" style="
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        resize: vertical;
-      "></textarea>
+        <textarea id="observacoes" name="observacoes" rows="4" style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+        "></textarea>
     `;
     const blocoObservacoes = this.criarBlocoColapsavel('Observações', observacoesDiv, 'observacoes');
     form.appendChild(blocoObservacoes);
 
-    form.innerHTML += `
-      <button type="submit" style="
+    // Botão Salvar
+    const botaoSalvar = document.createElement('button');
+    botaoSalvar.type = 'submit';
+    botaoSalvar.textContent = 'Salvar Orçamento';
+    botaoSalvar.style.cssText = `
         background: ${CONFIG.STYLES.COLORS.PRIMARY};
         color: white;
         border: none;
         border-radius: 4px;
-        padding: 12px 24px;
+        padding: 12px;
         cursor: pointer;
-        width: 100%;
         font-size: 16px;
         font-weight: 500;
-        margin-top: 16px;
-        transition: background-color 0.2s;
-      ">Salvar Orçamento</button>
+        margin-top: 20px;
+        width: 100%;
     `;
 
-    // Configurar eventos do formulário
+    form.appendChild(botaoSalvar);
     form.onsubmit = (e) => this.handleSubmit(e);
-    
+
+    // Configurar eventos
     const addItemButton = form.querySelector('#adicionar-item') as HTMLButtonElement;
-    addItemButton.onclick = () => {
-      this.adicionarItemRow();
-    };
-    
+    if (addItemButton) {
+        addItemButton.onclick = () => this.adicionarItemRow();
+    }
+
     // Adicionar primeiro item por padrão
     this.adicionarItemRow(form.querySelector('#itens-container') as HTMLDivElement);
 
@@ -818,7 +870,16 @@ export class PainelOrcamento {
         email: (form.querySelector('#email') as HTMLInputElement).value,
         cpf: '',
         dataNascimento: '',
-        endereco: ''
+        endereco: {
+          cep: '',
+          logradouro: '',
+          numero: '',
+          complemento: '',
+          bairro: '',
+          cidade: '',
+          estado: '',
+          referencia: ''
+        }
       },
       observacoes: (form.querySelector('#observacoes') as HTMLTextAreaElement).value,
       itens: Array.from(form.querySelectorAll('#itens-container > div')).map(row => {
@@ -882,16 +943,17 @@ export class PainelOrcamento {
         dadosPessoais: {
           nome: (form.querySelector('#nome') as HTMLInputElement)?.value || '',
           email: (form.querySelector('#email') as HTMLInputElement)?.value || '',
-          dataNascimento: (form.querySelector('#dataNascimento') as HTMLInputElement)?.value || '',
+          cpf: '',
+          dataNascimento: '',
           endereco: {
-            cep: (form.querySelector('#cep') as HTMLInputElement)?.value || '',
-            logradouro: (form.querySelector('#logradouro') as HTMLInputElement)?.value || '',
-            numero: (form.querySelector('#numero') as HTMLInputElement)?.value || '',
-            complemento: (form.querySelector('#complemento') as HTMLInputElement)?.value || '',
-            bairro: (form.querySelector('#bairro') as HTMLInputElement)?.value || '',
-            cidade: (form.querySelector('#cidade') as HTMLInputElement)?.value || '',
-            estado: (form.querySelector('#estado') as HTMLSelectElement)?.value || '',
-            referencia: (form.querySelector('#referencia') as HTMLInputElement)?.value || ''
+            cep: '',
+            logradouro: '',
+            numero: '',
+            complemento: '',
+            bairro: '',
+            cidade: '',
+            estado: '',
+            referencia: ''
           }
         },
         observacoes: (form.querySelector('#observacoes') as HTMLTextAreaElement)?.value || '',
