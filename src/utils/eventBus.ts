@@ -1,83 +1,51 @@
 import { logger } from './logger';
 import { EventMessage, EventType } from '../types';
 
-type EventHandler<T = unknown> = (data: T) => void;
+type EventCallback = (...args: any[]) => void;
 
 class EventBus {
   private static instance: EventBus;
-  private handlers: Map<EventType, EventHandler[]>;
+  private listeners: { [key: string]: EventCallback[] } = {};
 
-  private constructor() {
-    this.handlers = new Map();
-  }
+  private constructor() {}
 
-  static getInstance(): EventBus {
+  public static getInstance(): EventBus {
     if (!EventBus.instance) {
       EventBus.instance = new EventBus();
     }
     return EventBus.instance;
   }
 
-  on<T = unknown>(event: EventType, handler: EventHandler<T>): void {
-    try {
-      if (!this.handlers.has(event)) {
-        this.handlers.set(event, []);
-      }
-      
-      this.handlers.get(event)?.push(handler as EventHandler);
-      logger.debug(`Registrado handler para evento: ${event}`);
-    } catch (error) {
-      logger.error(`Erro ao registrar handler para evento: ${event}`, { error });
+  public on(event: string, callback: EventCallback): void {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
     }
+    this.listeners[event].push(callback);
   }
 
-  off<T = unknown>(event: EventType, handler: EventHandler<T>): void {
-    try {
-      const handlers = this.handlers.get(event);
-      if (handlers) {
-        const index = handlers.indexOf(handler as EventHandler);
-        if (index > -1) {
-          handlers.splice(index, 1);
-          logger.debug(`Removido handler para evento: ${event}`);
-        }
-      }
-    } catch (error) {
-      logger.error(`Erro ao remover handler para evento: ${event}`, { error });
-    }
+  public off(event: string, callback: EventCallback): void {
+    if (!this.listeners[event]) return;
+    this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
   }
 
-  emit<T = unknown>(event: EventType, data: T): void {
-    try {
-      const handlers = this.handlers.get(event);
-      if (handlers) {
-        const message: EventMessage<T> = {
-          type: event,
-          data,
-          timestamp: Date.now()
-        };
-
-        handlers.forEach(handler => {
-          try {
-            handler(message.data);
-          } catch (error) {
-            logger.error(`Erro ao executar handler para evento: ${event}`, { error });
-          }
-        });
-
-        logger.debug(`Evento emitido: ${event}`, { data });
+  public emit(event: string, ...args: any[]): void {
+    if (!this.listeners[event]) return;
+    this.listeners[event].forEach(callback => {
+      try {
+        callback(...args);
+      } catch (error) {
+        console.error(`Erro ao executar callback para evento ${event}:`, error);
       }
-    } catch (error) {
-      logger.error(`Erro ao emitir evento: ${event}`, { error });
-    }
+    });
   }
 
-  clearHandlers(event?: EventType): void {
+  clearHandlers(event?: string): void {
     try {
       if (event) {
-        this.handlers.delete(event);
+        this.listeners[event] = [];
         logger.debug(`Handlers limpos para evento: ${event}`);
       } else {
-        this.handlers.clear();
+        this.listeners = {};
         logger.debug('Todos os handlers foram limpos');
       }
     } catch (error) {
