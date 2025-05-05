@@ -14,6 +14,7 @@ export class PainelOrcamento {
   private isProcessing: boolean = false;
   private updateTimeout: NodeJS.Timeout | null = null;
   private autoSaveTimeout: NodeJS.Timeout | null = null;
+  private readonly STORAGE_KEY_SECTIONS = 'whatsapp_orcamentos_sections';
 
   constructor() {
     this.container = this.criarPainel();
@@ -179,8 +180,8 @@ export class PainelOrcamento {
     painel.id = 'whatsapp-orcamento-panel';
     painel.style.cssText = `
       width: ${CONFIG.STYLES.SIZES.PANEL_WIDTH};
-      height: 100%;
-      position: absolute;
+      height: 100vh;
+      position: fixed;
       top: 0;
       right: 0;
       background-color: #ffffff;
@@ -188,8 +189,8 @@ export class PainelOrcamento {
       z-index: 1000;
       transition: transform 0.3s ease-in-out;
       transform: translateX(100%);
-      padding: 20px;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
       font-family: ${CONFIG.STYLES.FONTS.FAMILY};
     `;
 
@@ -199,7 +200,10 @@ export class PainelOrcamento {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      padding: 20px;
+      background-color: #fff;
+      border-bottom: 1px solid ${CONFIG.STYLES.COLORS.BACKGROUND};
+      flex-shrink: 0;
     `;
 
     const titulo = document.createElement('h2');
@@ -223,8 +227,18 @@ export class PainelOrcamento {
     header.appendChild(closeButton);
     painel.appendChild(header);
 
-    // Adicionar conteúdo do painel
-    this.adicionarConteudo(painel);
+    // Criar container para o conteúdo scrollável
+    const scrollContainer = document.createElement('div');
+    scrollContainer.style.cssText = `
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      height: calc(100vh - 70px); /* Altura total menos altura do header */
+    `;
+
+    // Adicionar conteúdo do painel dentro do container scrollável
+    this.adicionarConteudo(scrollContainer);
+    painel.appendChild(scrollContainer);
 
     return painel;
   }
@@ -263,141 +277,198 @@ export class PainelOrcamento {
     return button;
   }
 
-  private adicionarConteudo(painel: HTMLDivElement): void {
+  private criarBlocoColapsavel(titulo: string, conteudo: HTMLElement, id: string): HTMLDivElement {
+    const bloco = document.createElement('div');
+    bloco.className = 'form-section';
+    bloco.style.cssText = `
+      margin-bottom: 24px;
+      padding: 16px;
+      background: ${CONFIG.STYLES.COLORS.BACKGROUND};
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      user-select: none;
+      padding: 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+    `;
+    header.onmouseover = () => {
+      header.style.backgroundColor = 'rgba(0,0,0,0.05)';
+    };
+    header.onmouseout = () => {
+      header.style.backgroundColor = 'transparent';
+    };
+
+    const tituloElement = document.createElement('h3');
+    tituloElement.textContent = titulo;
+    tituloElement.style.cssText = `
+      color: ${CONFIG.STYLES.COLORS.PRIMARY};
+      margin: 0;
+      font-size: 16px;
+      flex: 1;
+      font-weight: 600;
+    `;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.setAttribute('aria-label', `Expandir/recolher seção ${titulo}`);
+    toggleBtn.style.cssText = `
+      background: none;
+      border: none;
+      color: ${CONFIG.STYLES.COLORS.PRIMARY};
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      transition: all 0.3s ease;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    `;
+    toggleBtn.onmouseover = () => {
+      toggleBtn.style.backgroundColor = 'rgba(0,0,0,0.05)';
+    };
+    toggleBtn.onmouseout = () => {
+      toggleBtn.style.backgroundColor = 'transparent';
+    };
+
+    const conteudoWrapper = document.createElement('div');
+    conteudoWrapper.className = 'section-content';
+    conteudoWrapper.style.cssText = `
+      overflow: hidden;
+      transition: all 0.3s ease;
+      opacity: 1;
+    `;
+    conteudoWrapper.appendChild(conteudo);
+
+    header.appendChild(tituloElement);
+    header.appendChild(toggleBtn);
+    bloco.appendChild(header);
+    bloco.appendChild(conteudoWrapper);
+
+    // Recuperar estado salvo
+    const sectionsState = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
+    const isExpanded = sectionsState[id] !== false; // Por padrão, expandido
+
+    this.atualizarEstadoBloco(bloco, toggleBtn, conteudoWrapper, isExpanded, id);
+
+    header.onclick = () => {
+      const novoEstado = toggleBtn.getAttribute('aria-expanded') !== 'true';
+      this.atualizarEstadoBloco(bloco, toggleBtn, conteudoWrapper, novoEstado, id);
+      
+      // Salvar estado
+      const estados = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SECTIONS) || '{}');
+      estados[id] = novoEstado;
+      localStorage.setItem(this.STORAGE_KEY_SECTIONS, JSON.stringify(estados));
+    };
+
+    return bloco;
+  }
+
+  private atualizarEstadoBloco(
+    bloco: HTMLDivElement, 
+    toggleBtn: HTMLButtonElement, 
+    conteudoWrapper: HTMLDivElement,
+    expandido: boolean,
+    id: string
+  ): void {
+    toggleBtn.textContent = expandido ? '▼' : '▲';
+    toggleBtn.setAttribute('aria-expanded', expandido.toString());
+    toggleBtn.title = expandido ? 'Recolher seção' : 'Expandir seção';
+    
+    if (expandido) {
+      conteudoWrapper.style.height = `${conteudoWrapper.scrollHeight}px`;
+      conteudoWrapper.style.opacity = '1';
+      conteudoWrapper.style.marginTop = '16px';
+      bloco.classList.remove('minimizado');
+      bloco.style.backgroundColor = CONFIG.STYLES.COLORS.BACKGROUND;
+    } else {
+      conteudoWrapper.style.height = '0';
+      conteudoWrapper.style.opacity = '0';
+      conteudoWrapper.style.marginTop = '0';
+      bloco.classList.add('minimizado');
+      bloco.style.backgroundColor = 'transparent';
+    }
+  }
+
+  private adicionarConteudo(container: HTMLDivElement): void {
     // Seção de informações do cliente
     const clienteInfo = document.createElement('div');
     clienteInfo.innerHTML = `
-      <div class="cliente-info" style="
-        margin-bottom: 20px;
-        padding: 16px;
-        background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-        border-radius: 8px;
-      ">
-        <h3 style="
-          color: ${CONFIG.STYLES.COLORS.PRIMARY};
-          margin: 0 0 10px 0;
-          font-size: 16px;
-        ">Informações do Cliente</h3>
-        <div id="telefone-cliente" style="
-          padding: 8px;
-          background: white;
-          border-radius: 4px;
-          color: ${CONFIG.STYLES.COLORS.PRIMARY};
-          font-weight: 500;
-        "></div>
-      </div>
+      <div id="telefone-cliente" style="
+        padding: 8px;
+        background: white;
+        border-radius: 4px;
+        color: ${CONFIG.STYLES.COLORS.PRIMARY};
+        font-weight: 500;
+      "></div>
     `;
-    painel.appendChild(clienteInfo);
+    const blocoCliente = this.criarBlocoColapsavel('Informações do Cliente', clienteInfo, 'cliente-info');
+    container.appendChild(blocoCliente);
 
     // Formulário de orçamento
     const form = document.createElement('form');
-    form.innerHTML = `
-      <div class="form-section" style="
-        margin-bottom: 24px;
-        padding: 16px;
-        background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-        border-radius: 8px;
-      ">
-        <h3 style="
-          color: ${CONFIG.STYLES.COLORS.PRIMARY};
-          margin: 0 0 16px 0;
-          font-size: 16px;
-        ">Dados Pessoais</h3>
-        <div class="input-group" style="margin-bottom: 12px;">
-          <label for="nome" style="
-            display: block;
-            margin-bottom: 4px;
-            color: ${CONFIG.STYLES.COLORS.TEXT};
-            font-size: 14px;
-          ">Nome:</label>
-          <input type="text" id="nome" name="nome" required style="
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-          ">
-        </div>
-        <div class="input-group" style="margin-bottom: 12px;">
-          <label for="email" style="
-            display: block;
-            margin-bottom: 4px;
-            color: ${CONFIG.STYLES.COLORS.TEXT};
-            font-size: 14px;
-          ">E-mail:</label>
-          <input type="email" id="email" name="email" style="
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-          ">
-        </div>
-        <div class="input-group" style="margin-bottom: 12px;">
-          <label for="telefone" style="
-            display: block;
-            margin-bottom: 4px;
-            color: ${CONFIG.STYLES.COLORS.TEXT};
-            font-size: 14px;
-          ">Telefone:</label>
-          <input type="tel" id="telefone" name="telefone" readonly style="
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-          ">
-        </div>
-      </div>
+    form.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    `;
 
-      <div class="form-section" style="
-        margin-bottom: 24px;
-        padding: 16px;
-        background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-        border-radius: 8px;
-      ">
-        <h3 style="
-          color: ${CONFIG.STYLES.COLORS.PRIMARY};
-          margin: 0 0 16px 0;
-          font-size: 16px;
-        ">Itens do Orçamento</h3>
-        <div id="itens-container"></div>
-        <button type="button" id="adicionar-item" style="
-          background: ${CONFIG.STYLES.COLORS.PRIMARY};
-          color: white;
-          border: none;
-          border-radius: 4px;
-          padding: 8px 16px;
-          cursor: pointer;
-          width: 100%;
-          font-size: 14px;
-          margin-top: 8px;
-          transition: background-color 0.2s;
-        ">+ Adicionar Item</button>
-      </div>
+    // Criar seções do formulário
+    const dadosPessoaisDiv = document.createElement('div');
+    dadosPessoaisDiv.innerHTML = this.criarHTMLDadosPessoais();
+    const blocoDadosPessoais = this.criarBlocoColapsavel('Dados Pessoais', dadosPessoaisDiv, 'dados-pessoais');
+    form.appendChild(blocoDadosPessoais);
 
-      <div class="form-section" style="
-        margin-bottom: 24px;
-        padding: 16px;
-        background: ${CONFIG.STYLES.COLORS.BACKGROUND};
-        border-radius: 8px;
-      ">
-        <h3 style="
-          color: ${CONFIG.STYLES.COLORS.PRIMARY};
-          margin: 0 0 16px 0;
-          font-size: 16px;
-        ">Observações</h3>
-        <textarea id="observacoes" name="observacoes" rows="4" style="
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-          resize: vertical;
-        "></textarea>
-      </div>
+    const enderecoDiv = document.createElement('div');
+    enderecoDiv.innerHTML = this.criarHTMLEndereco();
+    const blocoEndereco = this.criarBlocoColapsavel('Endereço de Entrega', enderecoDiv, 'endereco');
+    form.appendChild(blocoEndereco);
 
+    const itensDiv = document.createElement('div');
+    itensDiv.innerHTML = `
+      <div id="itens-container"></div>
+      <button type="button" id="adicionar-item" style="
+        background: ${CONFIG.STYLES.COLORS.PRIMARY};
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 14px;
+        margin-top: 8px;
+        transition: background-color 0.2s;
+      ">+ Adicionar Item</button>
+    `;
+    const blocoItens = this.criarBlocoColapsavel('Itens do Orçamento', itensDiv, 'itens');
+    form.appendChild(blocoItens);
+
+    const observacoesDiv = document.createElement('div');
+    observacoesDiv.innerHTML = `
+      <textarea id="observacoes" name="observacoes" rows="4" style="
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        resize: vertical;
+      "></textarea>
+    `;
+    const blocoObservacoes = this.criarBlocoColapsavel('Observações', observacoesDiv, 'observacoes');
+    form.appendChild(blocoObservacoes);
+
+    form.innerHTML += `
       <button type="submit" style="
         background: ${CONFIG.STYLES.COLORS.PRIMARY};
         color: white;
@@ -419,7 +490,6 @@ export class PainelOrcamento {
     const addItemButton = form.querySelector('#adicionar-item') as HTMLButtonElement;
     addItemButton.onclick = () => {
       this.adicionarItemRow();
-      // O auto-save será acionado pelo observer do itemsContainer
     };
     
     // Adicionar primeiro item por padrão
@@ -428,7 +498,242 @@ export class PainelOrcamento {
     // Configurar auto-save
     this.setupAutoSave(form);
 
-    painel.appendChild(form);
+    container.appendChild(form);
+  }
+
+  private criarHTMLDadosPessoais(): string {
+    return `
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="nome" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Nome Completo:</label>
+        <input type="text" id="nome" name="nome" required style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="email" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">E-mail:</label>
+        <input type="email" id="email" name="email" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="dataNascimento" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Data de Nascimento:</label>
+        <input type="date" id="dataNascimento" name="dataNascimento" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="telefone" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Telefone:</label>
+        <input type="tel" id="telefone" name="telefone" readonly style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          background: ${CONFIG.STYLES.COLORS.BACKGROUND};
+        ">
+      </div>
+    `;
+  }
+
+  private criarHTMLEndereco(): string {
+    return `
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="cep" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">CEP:</label>
+        <input type="text" id="cep" name="cep" maxlength="9" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="logradouro" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Logradouro:</label>
+        <input type="text" id="logradouro" name="logradouro" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+        <div class="input-group" style="flex: 0 0 30%;">
+          <label for="numero" style="
+            display: block;
+            margin-bottom: 4px;
+            color: ${CONFIG.STYLES.COLORS.TEXT};
+            font-size: 14px;
+          ">Número:</label>
+          <input type="text" id="numero" name="numero" style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+          ">
+        </div>
+
+        <div class="input-group" style="flex: 1;">
+          <label for="complemento" style="
+            display: block;
+            margin-bottom: 4px;
+            color: ${CONFIG.STYLES.COLORS.TEXT};
+            font-size: 14px;
+          ">Complemento:</label>
+          <input type="text" id="complemento" name="complemento" style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+          ">
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label for="bairro" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Bairro:</label>
+        <input type="text" id="bairro" name="bairro" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+        <div class="input-group" style="flex: 1;">
+          <label for="cidade" style="
+            display: block;
+            margin-bottom: 4px;
+            color: ${CONFIG.STYLES.COLORS.TEXT};
+            font-size: 14px;
+          ">Cidade:</label>
+          <input type="text" id="cidade" name="cidade" style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+          ">
+        </div>
+
+        <div class="input-group" style="flex: 0 0 100px;">
+          <label for="estado" style="
+            display: block;
+            margin-bottom: 4px;
+            color: ${CONFIG.STYLES.COLORS.TEXT};
+            font-size: 14px;
+          ">Estado:</label>
+          <select id="estado" name="estado" style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+          ">
+            <option value="">UF</option>
+            <option value="AC">AC</option>
+            <option value="AL">AL</option>
+            <option value="AP">AP</option>
+            <option value="AM">AM</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="DF">DF</option>
+            <option value="ES">ES</option>
+            <option value="GO">GO</option>
+            <option value="MA">MA</option>
+            <option value="MT">MT</option>
+            <option value="MS">MS</option>
+            <option value="MG">MG</option>
+            <option value="PA">PA</option>
+            <option value="PB">PB</option>
+            <option value="PR">PR</option>
+            <option value="PE">PE</option>
+            <option value="PI">PI</option>
+            <option value="RJ">RJ</option>
+            <option value="RN">RN</option>
+            <option value="RS">RS</option>
+            <option value="RO">RO</option>
+            <option value="RR">RR</option>
+            <option value="SC">SC</option>
+            <option value="SP">SP</option>
+            <option value="SE">SE</option>
+            <option value="TO">TO</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="referencia" style="
+          display: block;
+          margin-bottom: 4px;
+          color: ${CONFIG.STYLES.COLORS.TEXT};
+          font-size: 14px;
+        ">Ponto de Referência:</label>
+        <input type="text" id="referencia" name="referencia" style="
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        ">
+      </div>
+    `;
   }
 
   private adicionarItemRow(container?: HTMLDivElement): void {
@@ -530,7 +835,6 @@ export class PainelOrcamento {
   }
 
   private setupAutoSave(form: HTMLFormElement): void {
-    // Função de auto-save com debounce
     const debouncedSave = () => {
       if (this.autoSaveTimeout) {
         clearTimeout(this.autoSaveTimeout);
@@ -541,15 +845,21 @@ export class PainelOrcamento {
       }, 500);
     };
 
-    // Adicionar listeners para dados pessoais
-    form.querySelector('#nome')?.addEventListener('input', debouncedSave);
-    form.querySelector('#email')?.addEventListener('input', debouncedSave);
-    form.querySelector('#observacoes')?.addEventListener('input', debouncedSave);
+    // Adicionar listeners para todos os campos
+    const campos = [
+      '#nome', '#email', '#dataNascimento',
+      '#cep', '#logradouro', '#numero', '#complemento',
+      '#bairro', '#cidade', '#estado', '#referencia',
+      '#observacoes'
+    ];
+
+    campos.forEach(campo => {
+      form.querySelector(campo)?.addEventListener('input', debouncedSave);
+    });
 
     // Configurar observer para itens do orçamento
     const itemsContainer = form.querySelector('#itens-container');
     if (itemsContainer) {
-      // Observer para detectar adição/remoção de itens
       const itemsObserver = new MutationObserver(debouncedSave);
       itemsObserver.observe(itemsContainer, {
         childList: true,
@@ -557,7 +867,6 @@ export class PainelOrcamento {
         attributes: true,
       });
 
-      // Adicionar listener para mudanças nos inputs existentes
       itemsContainer.addEventListener('input', debouncedSave);
     }
   }
@@ -573,9 +882,17 @@ export class PainelOrcamento {
         dadosPessoais: {
           nome: (form.querySelector('#nome') as HTMLInputElement)?.value || '',
           email: (form.querySelector('#email') as HTMLInputElement)?.value || '',
-          cpf: '',
-          dataNascimento: '',
-          endereco: ''
+          dataNascimento: (form.querySelector('#dataNascimento') as HTMLInputElement)?.value || '',
+          endereco: {
+            cep: (form.querySelector('#cep') as HTMLInputElement)?.value || '',
+            logradouro: (form.querySelector('#logradouro') as HTMLInputElement)?.value || '',
+            numero: (form.querySelector('#numero') as HTMLInputElement)?.value || '',
+            complemento: (form.querySelector('#complemento') as HTMLInputElement)?.value || '',
+            bairro: (form.querySelector('#bairro') as HTMLInputElement)?.value || '',
+            cidade: (form.querySelector('#cidade') as HTMLInputElement)?.value || '',
+            estado: (form.querySelector('#estado') as HTMLSelectElement)?.value || '',
+            referencia: (form.querySelector('#referencia') as HTMLInputElement)?.value || ''
+          }
         },
         observacoes: (form.querySelector('#observacoes') as HTMLTextAreaElement)?.value || '',
         itens: Array.from(form.querySelectorAll('#itens-container > div')).map(row => {
